@@ -16,29 +16,20 @@ import {
   StatusBar,
   TextInput,
   Button,
-  Alert,
   NativeModules,
-  DeviceEventEmitter,
   Linking,
 } from 'react-native';
-
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {Header, Colors} from 'react-native/Libraries/NewAppScreen';
 import axios from 'axios';
 
 const Payment = () => {
-  const [holderName, setCardHolder] = useState('Hussamadin');
+  const [holderName, setCardHolder] = useState('Muhammad Ashfaq');
   const [cardNumber, setCardNumber] = useState('4111111111111111');
   const [expiryMonth, setExpiryMonth] = useState('05');
   const [expiryYear, setExpiryYear] = useState('2021');
-
+  const [message, setMessage] = useState('');
   const [cvv, setCvv] = useState('123');
-  //const [checkoutID, setCheckoutId] = useState("null");
+
   useEffect(() => {
     Linking.addEventListener('url', e => {
       const {url} = e;
@@ -57,11 +48,6 @@ const Payment = () => {
       }
       console.log('url', e);
     });
-    // Linking.getInitialURL().then((url) => {
-    //   if (url) {
-    //     console.log('Initial url is: ' + url);
-    //   }
-    // }).catch(err => console.error('An error occurred', err));
   }, []);
 
   const getPaymentStatus = async id => {
@@ -69,16 +55,21 @@ const Payment = () => {
     try {
       let res = await axios({
         method: 'post',
-        url: 'http://saib.gate2play.com/hussam/payment.php',
-        // url: 'https://test.oppwa.com/',
+        url:
+          'http://pm-rmg.esy.es/rmg-sa/emallNewBackend/EmallNewBackend2/public/api/hyperpay/payment-status',
+        // url: 'http://saib.gate2play.com/hussam/payment.php',
         headers: {},
         data: {
-          method: 'check_payment',
-          resourcePath: id,
+          // method: 'check_payment',
+          //resourcePath: id,
+          checkoutId: id,
           //cart: cartdata
         },
       });
       console.log(res);
+      if (res) {
+        setMessage(res.data.message);
+      }
       //TODO
       //if(res === 'success){
       //  done
@@ -95,8 +86,9 @@ const Payment = () => {
     try {
       let response = await axios({
         method: 'post',
-        url: 'http://saib.gate2play.com/hussam/payment.php',
-        // url: 'https://test.oppwa.com/',
+        //   url: 'http://saib.gate2play.com/hussam/payment.php',
+        url:
+          'http://pm-rmg.esy.es/rmg-sa/emallNewBackend/EmallNewBackend2/public/api/hyperpay/generate/checkout-id',
         headers: {},
         data: {
           method: 'payment',
@@ -106,7 +98,6 @@ const Payment = () => {
 
       const checkoutId = response.data.checkoutId;
       console.log(checkoutId);
-      //    setCheckoutId(checkoutId);
       if (checkoutId) {
         const paymentParams = {
           checkoutID: checkoutId,
@@ -121,7 +112,6 @@ const Payment = () => {
         let transactionResult = await NativeModules.Hyperpay.transactionPayment(
           paymentParams,
         );
-
         console.log(transactionResult);
         if (transactionResult.status === 'pending') {
           Linking.openURL(transactionResult.redirectURL);
@@ -248,6 +238,10 @@ const Payment = () => {
           <View style={styles.body}>
             <Button title="Press me" onPress={() => handlepay()} />
           </View>
+
+          <Text style={{alignSelf: 'center', margin: 20, fontSize: 20}}>
+            Response: {message}
+          </Text>
         </ScrollView>
       </SafeAreaView>
     </>

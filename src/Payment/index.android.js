@@ -16,33 +16,27 @@ import {
   StatusBar,
   TextInput,
   Button,
-  Alert,
   NativeModules,
-  DeviceEventEmitter,
   Linking,
+  DeviceEventEmitter,
+  AsyncStorage,
 } from 'react-native';
-
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {Header, Colors} from 'react-native/Libraries/NewAppScreen';
 import axios from 'axios';
 
 const Payment = () => {
+  const [dummyDeepLinkedUrl, setDummyDeepLinkedUrl] = useState(null);
   const [holderName, setCardHolder] = useState('Hussamadin');
   const [cardNumber, setCardNumber] = useState('4111111111111111');
   const [expiryMonth, setExpiryMonth] = useState('05');
   const [expiryYear, setExpiryYear] = useState('2021');
-
+  const [message, setMessage] = useState('');
   const [cvv, setCvv] = useState('123');
-  //const [checkoutID, setCheckoutId] = useState("null");
+
   useEffect(() => {
-    Linking.addEventListener('url', e => {
-      const {url} = e;
-      if (url) {
+    Linking.getInitialURL().then(async url => {
+      const deepLinkUrl = await AsyncStorage.getItem('deepLinkUrl');
+      if (url && url !== deepLinkUrl) {
         let regex = /[?&]([^=#]+)=([^&#]*)/g,
           params = {},
           match;
@@ -51,18 +45,42 @@ const Payment = () => {
           console.log(match[1], match[2]);
         }
         const {id, resourcePath} = params;
-        getPaymentStatus(id);
+        if (id) {
+          await AsyncStorage.setItem('deepLinkUrl', url);
+          setDummyDeepLinkedUrl(url);
+          getPaymentStatus(id);
+        }
       } else {
-        fetchPaymentUI();
+        console.log('outside getintialUrl metho');
+        // fetchCheckoutId();
       }
-      console.log('url', e);
     });
-    // Linking.getInitialURL().then((url) => {
+
+    // Linking.addEventListener('url', e => {
+    //   const {url} = e;
+    //   console.log(url);
     //   if (url) {
-    //     console.log('Initial url is: ' + url);
+    //     let regex = /[?&]([^=#]+)=([^&#]*)/g,
+    //       params = {},
+    //       match;
+    //     while ((match = regex.exec(url))) {
+    //       params[match[1]] = match[2];
+    //       console.log(match[1], match[2]);
+    //     }
+    //     const {id, resourcePath} = params;
+    //     getPaymentStatus(id);
+    //   } else {
+    //     fetchPaymentUI();
     //   }
-    // }).catch(err => console.error('An error occurred', err));
+    //   console.log('url', e);
+    // });
   }, []);
+
+  const onSessionConnect = event => {
+    console.log(event);
+    Linking.openURL(event.redirectUrl);
+  };
+  DeviceEventEmitter.addListener('transactionStatus', onSessionConnect);
 
   const getPaymentStatus = async id => {
     //TODO replace url with
@@ -70,7 +88,6 @@ const Payment = () => {
       let res = await axios({
         method: 'post',
         url: 'http://saib.gate2play.com/hussam/payment.php',
-        // url: 'https://test.oppwa.com/',
         headers: {},
         data: {
           method: 'check_payment',
@@ -79,11 +96,15 @@ const Payment = () => {
         },
       });
       console.log(res);
-      //TODO
-      //if(res === 'success){
+      if (res) {
+        //dummyDeepLinkedUrl = null;
+        setMessage(res.data.message);
+      }
+      //        TODO
+      // if(res === 'success){
       //  done
       //} else {
-      //return fetchPaymentUI();
+      //  return Show again UI to user
       //  }
       return fetchPaymentUI();
     } catch (err) {
@@ -98,7 +119,6 @@ const Payment = () => {
       let response = await axios({
         method: 'post',
         url: 'http://saib.gate2play.com/hussam/payment.php',
-        // url: 'https://test.oppwa.com/',
         headers: {},
         data: {
           method: 'payment',
@@ -107,7 +127,6 @@ const Payment = () => {
       });
       const checkoutId = response && response.data.checkoutId;
       console.log(checkoutId);
-      //setCheckoutId(checkoutId);
       if (checkoutId) {
         const paymentParams = {
           checkoutID: checkoutId,
@@ -248,6 +267,10 @@ const Payment = () => {
           <View style={styles.body}>
             <Button title="Press me" onPress={() => handlepay()} />
           </View>
+
+          <Text style={{alignSelf: 'center', margin: 20, fontSize: 20}}>
+            Response: {message}
+          </Text>
         </ScrollView>
       </SafeAreaView>
     </>

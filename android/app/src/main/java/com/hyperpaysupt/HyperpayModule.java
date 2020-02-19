@@ -92,7 +92,7 @@ public class HyperpayModule extends ReactContextBaseJavaModule implements ITrans
                     options.getString("expiryMonth"), options.getString("expiryYear"), options.getString("cvv"));
 
             //cardPaymentParams.setTokenizationEnabled(true);
-             cardPaymentParams.setShopperResultUrl("hyperpay://result");
+             cardPaymentParams.setShopperResultUrl("hyperpayspt://result");
             Transaction transaction = null;
 
             try {
@@ -105,6 +105,7 @@ public class HyperpayModule extends ReactContextBaseJavaModule implements ITrans
                 Log.d("Hyperpay", "android call");
             } catch (PaymentException ee) {
                 Log.d("Hyperpay", ee.getMessage());
+
                 promise.reject(null, ee.getMessage());
             }
         } catch (PaymentException e) {
